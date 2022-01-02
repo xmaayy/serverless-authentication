@@ -21,3 +21,12 @@ string that we deserialize into a user upon request.
     a lot less expensive than extra KV storage invocations ($5/M for KV vs $0.50/M for workers).
 4. User solves challenge and resubmits the form with everything included
 5. Server creates the user record and responds with the JWT that the user can use 
+
+
+
+
+## Problems
+### Not all packages support wasm
+There was some error `Uncaught Error: LinkError: WebAssembly.Instance(): Import #9 module="env" function="LIMBS_equal" error: function import requires a callable at line 0
+
+### Argon2 Is very slow (intentionally) but we have a 10ms limit

@@ -11,13 +11,18 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
+instant = {version="0.1.12", features = [ "wasm-bindgen", "inaccurate" ] }
 cfg-if = "0.1.2"
 worker = "0.0.7"
 worker-kv = "0.4.0"
 serde = {version = "1.0", features = ["derive"] }
 serde_json = "1.0.67"
-jsonwebtoken = "=7.2"
-rust-argon2 = "0.8"
+sthash = "0.2.12"
+getrandom = { version = "0.2.3", features = ["js"] }
+rand = {version = "0.8.4"}
+chrono = {version = "0.4", features=["wasmbind", "js-sys"]}
+jwt-compact = {version="0.5.0", default-features = false, features=['clock', 'ed25519-compact']}
+ed25519-compact = "1.0.1"
 
 # The `console_error_panic_hook` crate provides better debugging of panics by
 # logging them with `console.error`. This is great for development, but requires
@@ -28,3 +33,7 @@ console_error_panic_hook = { version = "0.1.1", optional = true }
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
+
+[package.metadata.wasm-pack.profile.release]
+# previously had just ['-O4']
+wasm-opt = ['-O4', '-g']
