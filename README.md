@@ -1,41 +1,23 @@
-# Getting Started
+# Dead Simple (i.e. last resort) Stateless Authentication
+The goal of this repo is to expriment with making a semi-safe, privacy respecting, user login for 
+very basic authentication applications. It's implemented entirely with stateless workers, using a
+globally available KV store from cloudflare. Useful mostly for small static sites where you dont
+want to have to manage any kind of session / state yourself. Because its meant to preserve privacy
+(i.e. theres no real validation when someone signs up) you dont know if someones made multiple
+accounts, so be wary of cost-overruns from this. 
 
-A template for kick starting a Cloudflare worker project using [`workers-rs`](https://github.com/cloudflare/workers-rs).
+# How It Works
+Cloudflare has a lovely * globally available *  key-value store for cloud workers, which just means
+we get an infinitely big, free, in memory hashmap to store our users in. Its a key value store, so you
+can only technically get one value per user. Fret not! Our 1 'value' can be a nicely serialized JSON
+string that we deserialize into a user upon request.
 
-This template is designed for compiling Rust to WebAssembly and publishing the resulting worker to 
-Cloudflare's [edge infrastructure](https://www.cloudflare.com/network/).
-
-## Usage 
-
-This template starts you off with a `src/lib.rs` file, acting as an entrypoint for requests hitting
-your Worker. Feel free to add more code in this file, or create Rust modules anywhere else for this
-project to use. 
-
-With `wrangler`, you can build, test, and deploy your Worker with the following commands: 
-
-```bash
-# compiles your project to WebAssembly and will warn of any issues
-wrangler build 
-
-# run your Worker in an ideal development workflow (with a local server, file watcher & more)
-wrangler dev
-
-# deploy your Worker globally to the Cloudflare network (update your wrangler.toml file for configuration)
-wrangler publish
-```
-
-Read the latest `worker` crate documentation here: https://docs.rs/worker
-
-## WebAssembly
-
-`workers-rs` (the Rust SDK for Cloudflare Workers used in this template) is meant to be executed as 
-compiled WebAssembly, and as such so **must** all the code you write and depend upon. All crates and
-modules used in Rust-based Workers projects have to compile to the `wasm32-unknown-unknown` triple. 
-
-Read more about this on the [`workers-rs` project README](https://github.com/cloudflare/workers-rs).
-
-## Issues
-
-If you have any problems with the `worker` crate, please open an issue on the upstream project 
-issue tracker on the [`workers-rs` repository](https://github.com/cloudflare/workers-rs).
-
+## Stages
+### Signup
+1. User fills out the signup form on your page
+2. User clicks submit
+3. Server responds with a plaintext or captcha challenge to discourage automated account creation
+    i. Important to note that the server has not yet stored anything relating to this user, worker invocations are 
+    a lot less expensive than extra KV storage invocations ($5/M for KV vs $0.50/M for workers).
+4. User solves challenge and resubmits the form with everything included
+5. Server creates the user record and responds with the JWT that the user can use 

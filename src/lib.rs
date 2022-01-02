@@ -1,4 +1,4 @@
-use serde_json::json;
+use serde::{Serialize, Deserialize};
 use worker::*;
 
 mod utils;
@@ -13,6 +13,18 @@ fn log_request(req: &Request) {
     );
 }
 
+
+#[derive(Serialize, Deserialize)]
+pub struct User {
+    // We should never be serializing this this though because
+    // sending a user password is no bueno
+    username: String,
+    password: String
+}
+
+// First signup request -> no challenge response -> send them a challenge
+// that has to be completed and the answer somehow xor'd with their username
+// submission
 #[event(fetch)]
 pub async fn main(req: Request, env: Env) -> Result<Response> {
     log_request(&req);
@@ -24,31 +36,57 @@ pub async fn main(req: Request, env: Env) -> Result<Response> {
     // catch-alls to match on specific patterns. Alternatively, use `Router::with_data(D)` to
     // provide arbitrary data that will be accessible in each route via the `ctx.data()` method.
     let router = Router::new();
-
-    // Add as many routes as your Worker needs! Each route will get a `Request` for handling HTTP
-    // functionality and a `RouteContext` which you can use to  and get route parameters and
-    // Environment bindings like KV Stores, Durable Objects, Secrets, and Variables.
     router
-        .get("/", |_, _| Response::ok("Hello from Workers!"))
-        .post_async("/form/:field", |mut req, ctx| async move {
-            if let Some(name) = ctx.param("field") {
-                let form = req.form_data().await?;
-                match form.get(name) {
-                    Some(FormEntry::Field(value)) => {
-                        return Response::from_json(&json!({ name: value }))
-                    }
-                    Some(FormEntry::File(_)) => {
-                        return Response::error("`field` param in form shouldn't be a File", 422);
-                    }
-                    None => return Response::error("Bad Request", 400),
-                }
-            }
-
+        .get("/", |_, _| Response::ok("The authentication server!"))
+        .get_async("/login/:account", |_, ctx| async move {
+            // Make sure they're trying to log into an account
+            if let Some(id) = ctx.param("account") {
+                let accounts = ctx.kv("WEBM_AUTH")?;
+                return match accounts.get(id).await? {
+                    Some(account) => Response::ok(account.as_string()),
+                    None => Response::error("Not found", 404),
+                };
+            };
             Response::error("Bad Request", 400)
         })
-        .get("/worker-version", |_, ctx| {
-            let version = ctx.var("WORKERS_RS_VERSION")?.to_string();
-            Response::ok(version)
+        .get_async("/signup/:account", |_, ctx| async move {
+            // Make sure they're trying to log into an account
+            if let Some(id) = ctx.param("account") {
+                let accounts = ctx.kv("WEBM_AUTH")?;
+                return match accounts.put(id, "temppass") {
+                    Ok(options) => match options.execute().await {
+                        Ok(()) => Response::ok("Added key"),
+                        Err(_) => Response::error("Failed to execute", 404),
+                    },
+                    Err(_) => Response::error("Couldnt Create Options", 404),
+                };
+            };
+            Response::error("Bad Request", 400)
+        })
+        .post_async("/register", |mut req, ctx| async move {
+            let form: User = req.json().await?;
+            let username: String = match form.get("username") {
+                Some(user) => match user {
+                    FormEntry::Field(field) => field,
+                    _ => return Response::error("Username was type file", 400),
+                },
+                None => return Response::error("No username provided", 400),
+            };
+            let password = match form.get("password") {
+                Some(pass) => match pass {
+                    FormEntry::Field(field) => field,
+                    _ => return Response::error("Username was type file", 400),
+                },
+                None => return Response::error("No password provided", 400),
+            };
+            let accounts = ctx.kv("WEBM_AUTH")?;
+            return match accounts.put(&username, &password) {
+                Ok(options) => match options.execute().await {
+                    Ok(()) => Response::ok("Added key"),
+                    Err(_) => Response::error("Failed to execute", 404),
+                },
+                Err(_) => Response::error("Couldnt Create Options", 404),
+            };
         })
         .run(req, env)
         .await

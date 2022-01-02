@@ -3,6 +3,16 @@ type = "javascript"
 workers_dev = true
 compatibility_date = "2021-12-31"
 
+[env.staging]
+kv_namespaces = [ 
+	 { binding = "WEBM_AUTH", id = "493bc3b6bf1c4b98a5e82f8f0bbfb73d", preview_id = "9aa1198b5be94c4ebb4d26ace7a4bcd9"}
+]
+
+[env.production]
+kv_namespaces = [ 
+	 { binding = "WEBM_AUTH", id = "81278f906891475d9faeb3adc1355480", preview_id = "4562d8fe6d704b08b4a7ac537ed66942" }
+]
+
 [vars]
 WORKERS_RS_VERSION = "0.0.7"
 
