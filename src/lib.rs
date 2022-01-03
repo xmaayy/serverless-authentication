@@ -14,12 +14,20 @@ fn log_request(req: &Request) {
     );
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct User {
     // We should never be serializing this this though because
     // sending a user password is no bueno
     username: String,
     password: String,
+}
+
+#[derive(Serialize)]
+pub struct UserResponse {
+    // We should never be serializing this this though because
+    // sending a user password is no bueno
+    username: String,
+    token: String,
 }
 
 // First signup request -> no challenge response -> send them a challenge
@@ -71,9 +79,19 @@ pub async fn main(req: Request, env: Env) -> Result<Response> {
                     return Response::error("Couldn't serialize user record to JSON string", 500)
                 }
             };
+
+            let serialized_response: String = match serde_json::to_string(&UserResponse {
+                username: account.username,
+                token: account.token,
+            }) {
+                Ok(ser) => ser,
+                Err(_) => {
+                    return Response::error("Couldn't serialize user record to JSON string", 500)
+                }
+            };
             return match kvstore.put(&json_user.username, &serialized_record) {
                 Ok(options) => match options.execute().await {
-                    Ok(()) => Response::ok(serialized_record),
+                    Ok(()) => Response::ok(serialized_response),
                     Err(_) => Response::error(
                         format!("Failed to execute For {}", json_user.username),
                         404,
@@ -100,9 +118,19 @@ pub async fn main(req: Request, env: Env) -> Result<Response> {
                     return Response::error("Couldn't serialize user record to JSON string", 500)
                 }
             };
+
+            let serialized_response: String = match serde_json::to_string(&UserResponse {
+                username: user_rec.username,
+                token: user_rec.token,
+            }) {
+                Ok(ser) => ser,
+                Err(_) => {
+                    return Response::error("Couldn't serialize user record to JSON string", 500)
+                }
+            };
             return match accounts.put(&json_user.username, &serialized_record) {
                 Ok(options) => match options.execute().await {
-                    Ok(()) => Response::ok(serialized_record),
+                    Ok(()) => Response::ok(serialized_response),
                     Err(_) => Response::error(
                         format!("Failed to execute For {}", json_user.username),
                         404,
@@ -124,9 +152,19 @@ pub async fn main(req: Request, env: Env) -> Result<Response> {
                     return Response::error("Couldn't serialize user record to JSON string", 500)
                 }
             };
+
+            let serialized_response: String = match serde_json::to_string(&UserResponse {
+                username: user_rec.username,
+                token: user_rec.token,
+            }) {
+                Ok(ser) => ser,
+                Err(_) => {
+                    return Response::error("Couldn't serialize user record to JSON string", 500)
+                }
+            };
             return match accounts.put(&String::from("Guest"), &serialized_record) {
                 Ok(options) => match options.execute().await {
-                    Ok(()) => Response::ok(serialized_record),
+                    Ok(()) => Response::ok(serialized_response),
                     Err(_) => Response::error(
                         format!("Failed to execute For {}", String::from("Guest")),
                         404,
@@ -154,15 +192,22 @@ pub async fn main(req: Request, env: Env) -> Result<Response> {
             let mut account: user::UserRecord = serde_json::from_str(&account_string.to_owned())?;
             // If the password was successfully updated we can upadte the user record in the
             // KV DB with the record the login function returns
-            account = match user::verify_login(
-                String::from("Guest"),
-                String::from("Guest"),
-                account,
-            ) {
-                Ok(updated_user) => updated_user,
-                Err(err) => return Response::error(err, 401),
-            };
+            account =
+                match user::verify_login(String::from("Guest"), String::from("Guest"), account) {
+                    Ok(updated_user) => updated_user,
+                    Err(err) => return Response::error(err, 401),
+                };
             let serialized_record: String = match serde_json::to_string(&account) {
+                Ok(ser) => ser,
+                Err(_) => {
+                    return Response::error("Couldn't serialize user record to JSON string", 500)
+                }
+            };
+
+            let serialized_response: String = match serde_json::to_string(&UserResponse {
+                username: account.username,
+                token: account.token,
+            }) {
                 Ok(ser) => ser,
                 Err(_) => {
                     return Response::error("Couldn't serialize user record to JSON string", 500)
@@ -170,7 +215,7 @@ pub async fn main(req: Request, env: Env) -> Result<Response> {
             };
             return match kvstore.put(&String::from("Guest"), &serialized_record) {
                 Ok(options) => match options.execute().await {
-                    Ok(()) => Response::ok(serialized_record),
+                    Ok(()) => Response::ok(serialized_response),
                     Err(_) => Response::error(
                         format!("Failed to execute For {}", String::from("Guest")),
                         404,

@@ -21,9 +21,9 @@ const SEED_ID: &'static str = "PLEASECHANGE";
 /// global KV store.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UserRecord {
-    username: String,
+    pub username: String,
     password: String,
-    token: String,
+    pub token: String,
 }
 
 impl UserRecord {}
