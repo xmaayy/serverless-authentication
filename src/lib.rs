@@ -124,7 +124,7 @@ pub async fn main(req: Request, env: Env) -> Result<Response> {
                     return Response::error("Couldn't serialize user record to JSON string", 500)
                 }
             };
-            return match accounts.put(&String::from("HI"), &serialized_record) {
+            return match accounts.put(&String::from("Guest"), &serialized_record) {
                 Ok(options) => match options.execute().await {
                     Ok(()) => Response::ok(serialized_record),
                     Err(_) => Response::error(
