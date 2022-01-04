@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use worker_kv::KvStore;
 use worker::*;
 
 mod user;
@@ -31,9 +30,6 @@ pub struct UserResponse {
     token: String,
 }
 
-// First signup request -> no challenge response -> send them a challenge
-// that has to be completed and the answer somehow xor'd with their username
-// submission
 #[event(fetch)]
 pub async fn main(req: Request, env: Env) -> Result<Response> {
     log_request(&req);
@@ -49,9 +45,9 @@ pub async fn main(req: Request, env: Env) -> Result<Response> {
         .get("/", |_, _| Response::ok("The authentication server!"))
         .post_async("/validate", |mut req, _| async move {
             let json_user: UserResponse = req.json().await?;
-            match user::validate_jwt(json_user.token.into()) {
+            match user::validate_jwt(json_user.token) {
                 Ok(_) => Response::ok("valid"),
-                Err(err) => Response::error(err, 401)
+                Err(err) => Response::error(err, 401),
             }
         })
         .post_async("/signin", |mut req, ctx| async move {
@@ -73,30 +69,14 @@ pub async fn main(req: Request, env: Env) -> Result<Response> {
             let mut account: user::UserRecord = serde_json::from_str(&account_string.to_owned())?;
             // If the password was successfully updated we can upadte the user record in the
             // KV DB with the record the login function returns
-            account = match user::verify_login(
-                json_user.username.to_owned(),
-                json_user.password,
-                account,
-            ) {
-                Ok(updated_user) => updated_user,
-                Err(err) => return Response::error(err, 401),
-            };
-            let serialized_record: String = match serde_json::to_string(&account) {
-                Ok(ser) => ser,
-                Err(_) => {
-                    return Response::error("Couldn't serialize user record to JSON string", 500)
-                }
-            };
+            account =
+                user::verify_login(json_user.username.to_owned(), json_user.password, account)?;
+            let serialized_record: String = serde_json::to_string(&account)?;
 
-            let serialized_response: String = match serde_json::to_string(&UserResponse {
+            let serialized_response: String = serde_json::to_string(&UserResponse {
                 username: account.username,
                 token: account.token,
-            }) {
-                Ok(ser) => ser,
-                Err(_) => {
-                    return Response::error("Couldn't serialize user record to JSON string", 500)
-                }
-            };
+            })?;
             return match kvstore.put(&json_user.username, &serialized_record) {
                 Ok(options) => match options.execute().await {
                     Ok(()) => Response::ok(serialized_response),
