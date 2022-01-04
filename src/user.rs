@@ -34,6 +34,26 @@ struct UserClaims {
     sub: String,
 }
 
+/// Validates a token using the given secret seed and returns a boolan if
+/// the JWT was valid or not
+/// 
+/// Its entirely possible for the client to validate this JWT on its own, but
+/// some clients will not have support for ED25519 so I'm exposing a first-party
+/// validation endpoint for the token string
+pub fn validate_jwt(token_string: String) -> Result<bool, String> {
+    // We really cant create the keys easily ourselves because
+    // they need to actually fall on the curve
+    let seed = Seed::from_slice(JSON_SECRET_SEED).map_err(|e| e.to_string())?;
+    let key_pair = KeyPair::from_seed(seed);
+    // Parse the token.
+    let token = UntrustedToken::new(&token_string).map_err(|e| e.to_string())?;
+    // Validate the token integrity.
+    match Ed25519.validate_integrity::<UserClaims, >(&token, &key_pair.pk){
+        Ok(_) => return Ok(true),
+        Err(err) => return Err(String::from(err.to_string()))
+    };
+}
+
 /// Hash the password provided by the user and return the byte vector
 /// that will be / was stored in the database.
 pub fn hash_password(password: String, salt: String) -> String {

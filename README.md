@@ -13,10 +13,4 @@ we get an infinitely big, free, in memory hashmap to store our users in. Its a k
 can only technically get one value per user. Fret not! Our 1 'value' can be a nicely serialized JSON
 string that we deserialize into a user upon request.
 
-## Problems
-### Not all packages support wasm
-There was some error `Uncaught Error: LinkError: WebAssembly.Instance(): Import #9 module="env" function="LIMBS_equal" error: function import requires a callable at line 0
-
-### Argon2 Is very slow (intentionally) but we have a 10ms limit
-https://security.stackexchange.com/questions/11839/what-is-the-difference-between-a-hash-function-and-a-cryptographic-hash-function
-https://github.com/jedisct1/rust-sthash
+## [Demo](https://whoelsebut.me/project/authless)
