@@ -62,7 +62,7 @@ pub async fn main(req: Request, env: Env) -> Result<Response> {
                 None => {
                     return Response::error(
                         format!("Requested username {} not found", &json_user.username),
-                        404,
+                        401,
                     )
                 }
             };

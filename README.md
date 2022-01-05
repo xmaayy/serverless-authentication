@@ -1,3 +1,4 @@
+![](AuthlessBanner.png)
 # Dead Simple (i.e. last resort) Stateless Authentication
 The goal of this repo is to expriment with making a semi-safe, privacy respecting, customizeable user login for 
 very basic authentication applications. It's implemented entirely with stateless cloudflare workers, using a
