@@ -1,4 +1,6 @@
-![](AuthlessBanner.png)
+
+![image](https://user-images.githubusercontent.com/21166352/148225362-9beb9e7f-019a-44c1-b118-2a3250e1b993.png)
+
 # Dead Simple (i.e. last resort) Stateless Authentication
 The goal of this repo is to expriment with making a semi-safe, privacy respecting, customizeable user login for 
 very basic authentication applications. It's implemented entirely with stateless cloudflare workers, using a
@@ -14,4 +16,4 @@ we get an infinitely big, free, in memory hashmap to store our users in. Its a k
 can only technically get one value per user. Fret not! Our 1 'value' can be a nicely serialized JSON
 string that we deserialize into a user upon request.
 
-## [Demo](https://whoelsebut.me/project/authless)
+## [Demo](https://authless-demo.whoelsebut.me/)
